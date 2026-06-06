@@ -122,6 +122,68 @@ Agent: [uses get_weather tool → gives current Paris weather]
 | API Framework | FastAPI |
 | Deployment | Railway |
 
+## Technical Design
+
+### Architecture
+
+The system follows a single-service architecture where FastAPI serves both the REST API and the static frontend. All requests flow through one entry point (`main.py`), which delegates to the LangChain agent. This avoids the complexity of a separate frontend deployment while keeping the backend modular.
+
+```
+HTTP Request
+    ↓
+FastAPI (main.py)
+    ↓
+chat() — planner.py
+    ├── MemoryManager.search_knowledge_base()   # PDF RAG context
+    ├── MemoryManager.get_relevant_preferences() # User preference recall
+    ├── build_agent() → AgentExecutor
+    │       ├── ChatOpenAI (GPT-4o)
+    │       └── Tools: [multi_hop_search, search_attractions,
+    │                    get_weather, search_hotels, search_flights]
+    └── MemoryManager.add_message()             # Store turn in session
+```
+
+Each request rebuilds the agent fresh (`build_agent()` is called per request) to avoid shared state across sessions.
+
+---
+
+### Tool Selection
+
+| Tool | API | Rationale |
+|------|-----|-----------|
+| `multi_hop_search` | Tavily | Performs 3 chained searches (overview → districts → experiences) to build richer context than a single query. Used first for any new destination. |
+| `search_attractions` | Tavily | Used for targeted follow-up queries (specific restaurants, activities) after the initial multi-hop pass. |
+| `get_weather` | OpenWeatherMap | Free tier supports real-time weather by city name — sufficient for the agent's needs without geocoding complexity. |
+| `search_hotels` | Mock data | Simulates hotel results with budget filtering. Avoids paid booking APIs while demonstrating tool-use and filtering logic. |
+| `search_flights` | Mock data | Same rationale as hotels — demonstrates multi-tool orchestration without requiring a live flight API. |
+
+**Why Tavily over direct Google/Bing search?** Tavily is purpose-built for LLM agents — it returns structured `answer` + `results` fields and handles deduplication, making it easier to parse than raw HTML scraping.
+
+**Why GPT-4o?** The OpenAI Functions API used by LangChain's `create_openai_functions_agent` requires a model that supports function calling natively. GPT-4o offers the best balance of reasoning quality and speed for multi-step tool orchestration.
+
+---
+
+### Memory Design
+
+The system implements a two-tier memory architecture:
+
+**Short-term memory (per-session conversation history)**
+- Stored in a Python dict keyed by `session_id`
+- Capped at the last 20 messages to prevent context overflow
+- Passed directly into the LangChain agent as `chat_history` on every request
+- Cleared on `DELETE /session/{session_id}`
+
+**Long-term memory (FAISS vector store)**
+- A single FAISS index is shared across all sessions (singleton `MemoryManager`)
+- Serves two purposes:
+  1. **Knowledge base** — PDFs in `Data/` are chunked into 500-character segments and embedded at startup, giving the agent offline knowledge about specific destinations
+  2. **Preference store** — when a user expresses preferences (budget, dietary, accessibility), the message is embedded and added to the same index for future recall
+- At query time, `similarity_search` retrieves the top-k relevant chunks and injects them into the system prompt as context
+
+**Trade-off:** FAISS is in-memory only — all stored preferences and session history are lost on app restart. For a production system this would be replaced with a persistent vector DB (e.g. Pinecone) and a session store (e.g. Redis).
+
+---
+
 ## Evaluation Metrics
 
 The agent is evaluated on:
