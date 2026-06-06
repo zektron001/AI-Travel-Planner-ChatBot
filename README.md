@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🌍 AI Travel Planner Agent
 
 An intelligent AI agent that helps users plan personalized 2-day trips using real-time data, memory, and multi-tool reasoning.
@@ -128,3 +129,7 @@ The agent is evaluated on:
 - **Memory**: Session continuity and preference recall
 - **Code Quality**: Modular, documented codebase
 - **Deployment**: Live cloud API on Render
+=======
+# Assesment
+Intern assesment
+>>>>>>> 29fc62f98f6c2d0eed16f08b7a132d17cc3d98e7
