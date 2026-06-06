@@ -1,17 +1,5 @@
-<<<<<<< HEAD
 .env
-__pycache__/
-*.pyc
-*.pyo
-.pytest_cache/
-venv/
-env/
-.venv/
-*.egg-info/
-dist/
-build/
 faiss_index/
-=======
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

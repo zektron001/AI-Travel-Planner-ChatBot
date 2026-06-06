@@ -68,7 +68,8 @@ def chat(session_id: str, user_message: str) -> str:
     kb_context = memory_manager.search_knowledge_base(user_message)
     if kb_context:
         long_term = kb_context + "\n" + long_term
-        agent_executor = build_agent()
+
+    agent_executor = build_agent()
 
     history = memory_manager.get_history(session_id)
     lc_history = []
