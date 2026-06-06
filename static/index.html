@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Travel Planner</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #ececec;
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 260px;
+      background: #171717;
+      border-right: 1px solid #2a2a2a;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    #sidebar-header { padding: 16px; border-bottom: 1px solid #2a2a2a; }
+
+    #new-chat-btn {
+      width: 100%;
+      background: #2563eb;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    #new-chat-btn:hover { background: #1d4ed8; }
+
+    #chat-list { flex: 1; overflow-y: auto; padding: 8px; }
+
+    .chat-list-label {
+      font-size: 11px; color: #555;
+      padding: 8px 8px 4px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    .chat-item {
+      padding: 10px 12px; border-radius: 8px;
+      cursor: pointer; font-size: 13px; color: #aaa;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      transition: background 0.2s;
+      display: flex; align-items: center;
+    }
+    .chat-item:hover { background: #222; color: #eee; }
+    .chat-item.active { background: #2a2a2a; color: #fff; }
+
+    .chat-item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+
+    .delete-btn {
+      opacity: 0;
+      font-size: 12px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      transition: opacity 0.2s;
+      cursor: pointer;
+    }
+    .chat-item:hover .delete-btn { opacity: 1; }
+    .delete-btn:hover { background: #3a2a2a; }
+
+    #sidebar-footer { padding: 12px 16px; border-top: 1px solid #2a2a2a; font-size: 12px; color: #555; }
+
+    #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    header {
+      background: #1a1a1a; padding: 14px 24px;
+      border-bottom: 1px solid #2a2a2a;
+      display: flex; align-items: center; gap: 10px;
+    }
+    header h1 { font-size: 16px; font-weight: 600; }
+    header p { font-size: 12px; color: #666; }
+
+    #chat-container {
+      flex: 1; overflow-y: auto; padding: 24px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+
+    .message {
+      display: flex; gap: 12px; max-width: 78%;
+      animation: fadeIn 0.25s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .message.user { align-self: flex-end; flex-direction: row-reverse; }
+    .message.assistant { align-self: flex-start; }
+
+    .avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .user .avatar { background: #2563eb; }
+    .assistant .avatar { background: #16a34a; }
+
+    .bubble { padding: 12px 16px; border-radius: 16px; line-height: 1.65; font-size: 14px; }
+    .user .bubble { background: #2563eb; border-bottom-right-radius: 4px; }
+    .assistant .bubble { background: #1e1e1e; border: 1px solid #2a2a2a; border-bottom-left-radius: 4px; }
+
+    .bubble h1, .bubble h2, .bubble h3, .bubble h4 { margin: 12px 0 6px; font-weight: 600; }
+    .bubble h3 { font-size: 15px; color: #60a5fa; }
+    .bubble h4 { font-size: 14px; color: #a78bfa; }
+    .bubble p { margin: 6px 0; }
+    .bubble ul, .bubble ol { padding-left: 20px; margin: 6px 0; }
+    .bubble li { margin: 4px 0; }
+    .bubble strong { color: #f0f0f0; font-weight: 600; }
+    .bubble hr { border: none; border-top: 1px solid #333; margin: 12px 0; }
+
+    .typing .bubble { color: #666; font-style: italic; }
+
+    .welcome { text-align: center; margin: auto; padding: 40px 20px; }
+    .welcome h2 { font-size: 26px; margin-bottom: 8px; }
+    .welcome p { color: #666; font-size: 14px; margin-bottom: 28px; }
+    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 600px; margin: 0 auto; }
+    .suggestion-btn {
+      background: #1e1e1e; border: 1px solid #2a2a2a;
+      border-radius: 20px; color: #bbb;
+      padding: 9px 18px; font-size: 13px;
+      cursor: pointer; transition: all 0.2s; font-family: inherit;
+    }
+    .suggestion-btn:hover { border-color: #2563eb; color: white; }
+
+    #input-area {
+      padding: 16px 24px; background: #1a1a1a;
+      border-top: 1px solid #2a2a2a;
+      display: flex; gap: 10px; align-items: flex-end;
+    }
+    #message-input {
+      flex: 1; background: #2a2a2a; border: 1px solid #3a3a3a;
+      border-radius: 12px; color: #ececec;
+      padding: 12px 16px; font-size: 14px;
+      resize: none; outline: none; max-height: 140px;
+      font-family: inherit; line-height: 1.5;
+    }
+    #message-input:focus { border-color: #2563eb; }
+    #message-input::placeholder { color: #555; }
+
+    #send-btn {
+      background: #2563eb; border: none; border-radius: 12px;
+      color: white; width: 44px; height: 44px;
+      cursor: pointer; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.2s;
+    }
+    #send-btn:hover { background: #1d4ed8; }
+    #send-btn:disabled { background: #2a2a2a; cursor: not-allowed; color: #555; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div id="sidebar-header">
+    <button id="new-chat-btn" onclick="newChat()">✏️ New Trip Plan</button>
+  </div>
+  <div id="chat-list"><div class="chat-list-label">Recent</div></div>
+  <div id="sidebar-footer">🌍 AI Travel Planner v1.0</div>
+</div>
+
+<div id="main">
+  <header>
+    <div style="font-size:22px">🌍</div>
+    <div>
+      <h1>AI Travel Planner</h1>
+      <p>Powered by GPT-4o · Multi-hop RAG · Plan your perfect 2-day trip</p>
+    </div>
+  </header>
+
+  <div id="chat-container">
+    <div class="welcome" id="welcome">
+      <h2>Where do you want to go? ✈️</h2>
+      <p>Tell me your destination, budget, and preferences — I'll plan everything.</p>
+      <div class="suggestions">
+        <button class="suggestion-btn" onclick="sendSuggestion(this)">🗼 2-day Tokyo on $100/day</button>
+        <button class="suggestion-btn" onclick="sendSuggestion(this)">🥐 Weekend in Paris for a couple</button>
+        <button class="suggestion-btn" onclick="sendSuggestion(this)">🦁 Family trip to Singapore</button>
+        <button class="suggestion-btn" onclick="sendSuggestion(this)">🏖️ Solo Bangkok on a budget</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="input-area">
+    <textarea id="message-input" placeholder="Ask me to plan your trip..." rows="1"></textarea>
+    <button id="send-btn" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<script>
+  marked.setOptions({ breaks: true, gfm: true });
+
+  let sessions = JSON.parse(localStorage.getItem('travel_sessions') || '[]');
+  let currentSessionId = null;
+
+  renderSidebar();
+  if (sessions.length > 0) loadSession(sessions[0].id);
+
+  function generateId() { return 'sess-' + Math.random().toString(36).substr(2, 9); }
+
+  function saveSession(id, title, messages) {
+    const idx = sessions.findIndex(s => s.id === id);
+    if (idx >= 0) sessions[idx] = { id, title, messages };
+    else sessions.unshift({ id, title, messages });
+    localStorage.setItem('travel_sessions', JSON.stringify(sessions));
+    renderSidebar();
+  }
+
+  function deleteSession(e, id) {
+    e.stopPropagation();
+    sessions = sessions.filter(s => s.id !== id);
+    localStorage.setItem('travel_sessions', JSON.stringify(sessions));
+    if (currentSessionId === id) newChat();
+    else renderSidebar();
+  }
+
+  function newChat() {
+    currentSessionId = generateId();
+    document.getElementById('chat-container').innerHTML = `
+      <div class="welcome" id="welcome">
+        <h2>Where do you want to go? ✈️</h2>
+        <p>Tell me your destination, budget, and preferences — I'll plan everything.</p>
+        <div class="suggestions">
+          <button class="suggestion-btn" onclick="sendSuggestion(this)">🗼 2-day Tokyo on $100/day</button>
+          <button class="suggestion-btn" onclick="sendSuggestion(this)">🥐 Weekend in Paris for a couple</button>
+          <button class="suggestion-btn" onclick="sendSuggestion(this)">🦁 Family trip to Singapore</button>
+          <button class="suggestion-btn" onclick="sendSuggestion(this)">🏖️ Solo Bangkok on a budget</button>
+        </div>
+      </div>`;
+    renderSidebar();
+    document.getElementById('message-input').focus();
+  }
+
+  function loadSession(id) {
+    const session = sessions.find(s => s.id === id);
+    if (!session) return;
+    currentSessionId = id;
+    const container = document.getElementById('chat-container');
+    container.innerHTML = '';
+    session.messages.forEach(m => appendMessage(m.role, m.content));
+    container.scrollTop = container.scrollHeight;
+    renderSidebar();
+  }
+
+  function renderSidebar() {
+    const list = document.getElementById('chat-list');
+    list.innerHTML = '<div class="chat-list-label">Recent</div>';
+    sessions.forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'chat-item' + (s.id === currentSessionId ? ' active' : '');
+      div.innerHTML = `
+        <span class="chat-item-title">✈️ ${s.title}</span>
+        <span class="delete-btn" onclick="deleteSession(event,'${s.id}')">🗑️</span>`;
+      div.onclick = () => loadSession(s.id);
+      list.appendChild(div);
+    });
+  }
+
+  function appendMessage(role, text) {
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+    const container = document.getElementById('chat-container');
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+    const bubbleContent = role === 'assistant'
+      ? marked.parse(text)
+      : text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    div.innerHTML = `
+      <div class="avatar">${role === 'user' ? '🧑' : '🤖'}</div>
+      <div class="bubble">${bubbleContent}</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  function sendSuggestion(btn) {
+    document.getElementById('message-input').value = btn.textContent.replace(/^.{2}/, '').trim();
+    sendMessage();
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+    if (!text) return;
+    if (!currentSessionId) currentSessionId = generateId();
+    input.value = '';
+    input.style.height = 'auto';
+    document.getElementById('send-btn').disabled = true;
+    appendMessage('user', text);
+    const typing = appendMessage('assistant typing', '✈️ Researching your trip...');
+    try {
+      const res = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, session_id: currentSessionId })
+      });
+      const data = await res.json();
+      typing.remove();
+      appendMessage('assistant', data.reply || 'Sorry, something went wrong.');
+      const session = sessions.find(s => s.id === currentSessionId);
+      const messages = session ? session.messages : [];
+      messages.push({ role: 'user', content: text });
+      messages.push({ role: 'assistant', content: data.reply });
+      const title = messages[0].content.substring(0, 35) + '...';
+      saveSession(currentSessionId, title, messages);
+    } catch (err) {
+      typing.remove();
+      appendMessage('assistant', '❌ Could not reach the server.');
+    }
+    document.getElementById('send-btn').disabled = false;
+    input.focus();
+  }
+
+  document.getElementById('message-input').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+  });
+
+  document.getElementById('message-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+</script>
+</body>
+</html>
