@@ -11,7 +11,7 @@ class MemoryManager:
 
     def __init__(self):
         self.short_term: dict[str, list] = {}
-        self.embeddings = OpenAIEmbeddings()
+        self.embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
         self.vector_store = None
         self._init_vector_store()
         self._load_data_folder()
