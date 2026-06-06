@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🌍 AI Travel Planner Agent
 
 An intelligent AI agent that helps users plan personalized 2-day trips using real-time data, memory, and multi-tool reasoning.
@@ -83,7 +82,7 @@ Retrieve full conversation history.
 ### DELETE `/session/{session_id}`
 Clear a session (start fresh).
 
-### GET `/`
+### GET `/health`
 Health check.
 
 ## Example Conversations
@@ -99,14 +98,16 @@ User: What's the weather like?
 Agent: [uses get_weather tool → gives current Paris weather]
 ```
 
-## Deployment on Render
+## Deployment on Railway
 
 1. Push this repo to GitHub
-2. Go to [render.com](https://render.com) → New Web Service
-3. Connect your GitHub repo
-4. Render auto-detects `render.yaml`
-5. Add environment variables in Render dashboard
-6. Deploy! 🚀
+2. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub repo
+3. Railway auto-detects `railway.json`
+4. Add environment variables in Railway dashboard (no quotes around values):
+   - `OPENAI_API_KEY`
+   - `TAVILY_API_KEY`
+   - `OPENWEATHER_API_KEY`
+5. Deploy! 🚀
 
 ## Tech Stack
 
@@ -119,7 +120,7 @@ Agent: [uses get_weather tool → gives current Paris weather]
 | Web Search | Tavily API |
 | Weather | OpenWeatherMap API |
 | API Framework | FastAPI |
-| Deployment | Render |
+| Deployment | Railway |
 
 ## Evaluation Metrics
 
@@ -128,8 +129,4 @@ The agent is evaluated on:
 - **LLM + RAG**: Effective retrieval from Tavily search
 - **Memory**: Session continuity and preference recall
 - **Code Quality**: Modular, documented codebase
-- **Deployment**: Live cloud API on Render
-=======
-# Assesment
-Intern assesment
->>>>>>> 29fc62f98f6c2d0eed16f08b7a132d17cc3d98e7
+- **Deployment**: Live cloud API on Railway
