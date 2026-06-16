@@ -1,6 +1,6 @@
 # 🌍 AI Travel Planner Agent
 
-An intelligent AI agent that helps users plan personalized 2-day trips using real-time data, memory, and multi-tool reasoning. To check on the project pleas follow this [link](https://ai-travel-planner-production-3ea3.up.railway.app/)
+An intelligent AI agent that helps users plan personalized 2-day trips using real-time data, memory, and multi-tool reasoning. To check on the project please follow this [link](https://ai-travel-planner-production-3ea3.up.railway.app/).
 
 ## Architecture
 
