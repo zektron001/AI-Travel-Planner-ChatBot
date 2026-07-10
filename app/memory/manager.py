@@ -4,6 +4,7 @@ from langchain.schema import Document
 from pypdf import PdfReader
 import os
 import glob
+# Load environment variables from .env file
 
 
 class MemoryManager:
